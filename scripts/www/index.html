@@ -1,0 +1,126 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>观察物体（二）· 学生端</title>
+      <link rel="stylesheet" href="css/style.css?v=20261015a"/>
+  <style>
+    /* 课后作业“小奇生成中”过渡卡片动画（20261016 功能一） */
+    @keyframes hwGenPulse { 0%,100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.18) rotate(12deg); } }
+    .hw-gen-emoji { display: inline-block; animation: hwGenPulse 1.2s ease-in-out infinite; }
+    /* 课堂练习提交对错鼓励语弹层（20261016 功能二）：居中大字、绿/橙分色、数秒自动消失 */
+    .praise-pop {
+      position: fixed; left: 50%; top: 38%; z-index: 90;
+      transform: translate(-50%, -50%) scale(.85);
+      max-width: 82%; padding: 18px 30px; border-radius: 18px;
+      font-size: 20px; font-weight: 800; line-height: 1.6; text-align: center;
+      box-shadow: 0 12px 34px rgba(22, 35, 59, .22);
+      opacity: 0; pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .praise-pop.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .praise-pop.ok { background: #e7f7ec; color: #1d7a38; border: 2px solid #58b26a; }
+    .praise-pop.no { background: #fff3e4; color: #b3540a; border: 2px solid #f0a04b; }
+    /* 自我评价 AI 评价卡片补充（20261016 功能三） */
+    .self-eval-stars { margin-top: 8px; font-size: 15px; color: var(--ink-soft); }
+    .self-eval-stars b { color: #f5a623; font-size: 18px; letter-spacing: 2px; }
+    .self-eval-ai { margin-top: 10px; font-size: 14px; font-weight: 800; color: var(--blue-dark); }
+    /* 工具弹层加载提示（20261016 优化二）：覆盖 iframe 区域，load 后隐藏，12s 兜底 */
+    .gm-box { position: relative; }
+    .gm-loading {
+      position: absolute; left: 0; right: 0; top: 45px; bottom: 0; z-index: 5;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: #fff; color: var(--ink-soft); font-weight: 700; font-size: 17px;
+    }
+    .gm-loading.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="emoji">🧊</span>
+    <h1>观察物体（二）· 学生端</h1>
+    <div class="spacer"></div>
+    <div class="who hidden" id="whoBar"></div>
+    <button class="logout-btn hidden" id="logoutBtn" type="button">退出登录</button>
+  </div>
+
+  <div id="minionBar" class="minion hidden">
+    <span class="m-avatar">🦉</span>
+    <div class="m-text" id="minionText"></div>
+  </div>
+  <div id="welcomeBar" class="welcome"></div>
+
+  <div class="wrap">
+    <!-- 入口 -->
+    <div id="enter" class="card enter">
+      <div class="logo">🔭</div>
+      <h2>欢迎进入数学课堂</h2>
+      <div class="tip">《观察物体（二）》· 请输入你的学号</div>
+      <input id="studentIdInput" type="text" inputmode="numeric" placeholder="请输入学号（01-45）" autocomplete="off"/>
+      <button id="studentIdBtn" class="btn block" type="button">确定进入</button>
+      <div id="studentIdErr" class="err-msg" style="color:#e53935;display:none;margin-top:8px;"></div>
+    </div>
+
+    <!-- 主体（进入后显示） -->
+    <div id="main" class="hidden">
+      <div class="tabs" id="tabs">
+        <div class="tab" data-tab="pre">课前小测<span class="lock" data-lock="pre"></span></div>
+        <div class="tab" data-tab="pra">课堂练习<span class="lock" data-lock="pra"></span></div>
+        <div class="tab" data-tab="self">自我评价<span class="lock" data-lock="self"></span></div>
+        <div class="tab" data-tab="hw">课后作业<span class="lock" data-lock="hw"></span></div>
+      </div>
+
+      <div id="view-pre"><!-- 课前小测 --></div>
+      <div id="view-pra" class="hidden"><!-- 课堂练习 --></div>
+      <div id="view-self" class="hidden"><!-- 自我评价 --></div>
+      <div id="view-hw" class="hidden"><!-- 课后作业 --></div>
+    </div>
+  </div>
+
+  <!-- 底部固定容器：上为提交栏、下为三工具栏，纵向排列互不重叠 -->
+  <div id="bottomDock" class="bottom-dock">
+    <div id="submitBar" class="footer-bar hidden">
+      <div class="inner">
+        <div class="fb-info" id="fbInfo"></div>
+        <button class="btn" id="submitBtn">提交</button>
+      </div>
+    </div>
+
+    <!-- 底部三工具栏 -->
+    <div class="bottom-tools">
+      <a class="bt-item" id="toolFeixiang" href="javascript:void(0)">🐘 飞象老师</a>
+      <a class="bt-item" id="toolGoldMiner" href="javascript:void(0)">⛏️ 黄金矿工</a>
+      <a class="bt-item" id="toolKivicube" href="javascript:void(0)">🏛️ 鸟巢</a>
+    </div>
+  </div>
+
+  <!-- 黄金矿工 iframe 弹窗 -->
+  <div id="gmMask" class="gm-mask hidden">
+    <div class="gm-box">
+      <div class="gm-head"><span>⛏️ 黄金矿工</span><button id="gmClose" type="button" class="gm-close">✕ 关闭</button></div>
+      <div class="gm-loading hidden" id="gmLoading"><span class="spin"></span>加载中，请稍候…</div>
+      <iframe id="gmFrame" class="gm-frame" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <!-- 飞象老师 iframe 弹窗 -->
+  <div id="fxMask" class="gm-mask hidden">
+    <div class="gm-box">
+      <div class="gm-head"><span>🐘 飞象老师</span><button id="fxClose" type="button" class="gm-close">✕ 关闭</button></div>
+      <div class="gm-loading hidden" id="fxLoading"><span class="spin"></span>加载中，请稍候…</div>
+      <iframe id="fxFrame" class="gm-frame" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <!-- 鸟巢 iframe 弹窗 -->
+  <div id="kvMask" class="gm-mask hidden">
+    <div class="gm-box">
+      <div class="gm-head"><span>🏛️ 鸟巢</span><button id="kvClose" type="button" class="gm-close">✕ 关闭</button></div>
+      <div class="gm-loading hidden" id="kvLoading"><span class="spin"></span>加载中，请稍候…</div>
+      <iframe id="kvFrame" class="gm-frame" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <script src="js/common.js?v=20261016b"></script>
+  <script src="js/student.js?v=20261016c"></script>
+
+</body></html>
