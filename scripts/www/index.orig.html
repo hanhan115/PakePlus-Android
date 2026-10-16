@@ -1,0 +1,332 @@
+<!DOCTYPE html><html lang="zh-CN"><head><!-- Coze Coding Analytics -->
+<script>
+(function(){
+  function randomUUID(){
+    if(typeof crypto!=="undefined"&&typeof crypto.randomUUID==="function"){
+      return crypto.randomUUID();
+    }
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g,function(c){
+      return(+c^(crypto.getRandomValues(new Uint8Array(1))[0]&(15>>(+c/4)))).toString(16);
+    });
+  }
+
+  function encode(obj){return btoa(JSON.stringify(obj))}
+  function decode(str){try{return JSON.parse(atob(str))}catch(e){return null}}
+
+  function getDeviceId(){
+    var storageKey="__coze_coding_device_info";
+    try{
+      var info=decode(localStorage.getItem(storageKey));
+      if(info&&typeof info.did==="string"){return info.did}
+    }catch(e){}
+    var newInfo={did:randomUUID()};
+    try{localStorage.setItem(storageKey,encode(newInfo))}catch(e){}
+    return newInfo.did;
+  }
+
+  function sendPageViewEvent(){
+    var deviceId=getDeviceId();
+    var projectId="7690516429887717416";
+    var reportURL="https://code.coze.cn/api/coding/deployment/analytics/report?project_id="+encodeURIComponent(projectId)+"&did="+encodeURIComponent(deviceId);
+    try{
+      fetch(reportURL,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          events:[{
+            type:"page_view",
+            url:window.location.href,
+            path:window.location.pathname,
+            referrer:document.referrer,
+            timestamp:Date.now()
+          }]
+        })
+      }).catch(function(){});
+    }catch(e){}
+  }
+
+  if(document.readyState==="complete"){
+    sendPageViewEvent();
+  }else{
+    document.addEventListener("readystatechange",function(){
+      if(document.readyState==="complete"){sendPageViewEvent()}
+    });
+  }
+})();
+</script>
+<!-- WebPro SDK -->
+<script>
+(function(n,e,r,t,a,o,s,i,c,l,f,m,p,u){o="precollect";s="getAttribute";i="addEventListener";c="PerformanceObserver";l=function(e){f=[].slice.call(arguments);f.push(Date.now(),location.href);(e==o?l.p.a:l.q).push(f)};l.q=[];l.p={a:[]};n[a]=l;m=document.createElement("script");m.src=r+"?aid="+t+"&globalName="+a;m.crossOrigin="anonymous";e.getElementsByTagName("head")[0].appendChild(m);if(i in n){l.pcErr=function(e){e=e||n.event;p=e.target||e.srcElement;if(p instanceof Element||p instanceof HTMLElement){n[a](o,"st",{tagName:p.tagName,url:p[s]("href")||p[s]("src")})}else{n[a](o,"err",e.error||e.message)}};l.pcRej=function(e){e=e||n.event;n[a](o,"reject",e.reason||e.detail&&e.detail.reason)};n[i]("error",l.pcErr,true);n[i]("unhandledrejection",l.pcRej,true)}if("PerformanceLongTaskTiming"in n){u=l.pp={entries:[]};u.observer=new PerformanceObserver(function(e){u.entries=u.entries.concat(e.getEntries())});u.observer.observe({entryTypes:["longtask"]})}})(window,document,"https://apm.volccdn.com/mars-web/apmplus/web/browser.cn.js",1001891,"apmPlus");
+</script>
+<script>
+window.apmPlus("context.set", "project_id", "7690516429887717416");
+window.apmPlus("init",{
+  aid: 1001891,
+  token: '26a8704bd4d34b1698085c787d0c95d0'
+});
+window.apmPlus("start");
+</script>
+<!-- Coze Coding Analytics -->
+<script>
+(function(){
+  function randomUUID(){
+    if(typeof crypto!=="undefined"&&typeof crypto.randomUUID==="function"){
+      return crypto.randomUUID();
+    }
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g,function(c){
+      return(+c^(crypto.getRandomValues(new Uint8Array(1))[0]&(15>>(+c/4)))).toString(16);
+    });
+  }
+
+  function encode(obj){return btoa(JSON.stringify(obj))}
+  function decode(str){try{return JSON.parse(atob(str))}catch(e){return null}}
+
+  function getDeviceId(){
+    var storageKey="__coze_coding_device_info";
+    try{
+      var info=decode(localStorage.getItem(storageKey));
+      if(info&&typeof info.did==="string"){return info.did}
+    }catch(e){}
+    var newInfo={did:randomUUID()};
+    try{localStorage.setItem(storageKey,encode(newInfo))}catch(e){}
+    return newInfo.did;
+  }
+
+  function sendPageViewEvent(){
+    var deviceId=getDeviceId();
+    var projectId="7690516429887717416";
+    var reportURL="https://code.coze.cn/api/coding/deployment/analytics/report?project_id="+encodeURIComponent(projectId)+"&did="+encodeURIComponent(deviceId);
+    try{
+      fetch(reportURL,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          events:[{
+            type:"page_view",
+            url:window.location.href,
+            path:window.location.pathname,
+            referrer:document.referrer,
+            timestamp:Date.now()
+          }]
+        })
+      }).catch(function(){});
+    }catch(e){}
+  }
+
+  if(document.readyState==="complete"){
+    sendPageViewEvent();
+  }else{
+    document.addEventListener("readystatechange",function(){
+      if(document.readyState==="complete"){sendPageViewEvent()}
+    });
+  }
+})();
+</script>
+<!-- WebPro SDK -->
+<script>
+(function(n,e,r,t,a,o,s,i,c,l,f,m,p,u){o="precollect";s="getAttribute";i="addEventListener";c="PerformanceObserver";l=function(e){f=[].slice.call(arguments);f.push(Date.now(),location.href);(e==o?l.p.a:l.q).push(f)};l.q=[];l.p={a:[]};n[a]=l;m=document.createElement("script");m.src=r+"?aid="+t+"&globalName="+a;m.crossOrigin="anonymous";e.getElementsByTagName("head")[0].appendChild(m);if(i in n){l.pcErr=function(e){e=e||n.event;p=e.target||e.srcElement;if(p instanceof Element||p instanceof HTMLElement){n[a](o,"st",{tagName:p.tagName,url:p[s]("href")||p[s]("src")})}else{n[a](o,"err",e.error||e.message)}};l.pcRej=function(e){e=e||n.event;n[a](o,"reject",e.reason||e.detail&&e.detail.reason)};n[i]("error",l.pcErr,true);n[i]("unhandledrejection",l.pcRej,true)}if("PerformanceLongTaskTiming"in n){u=l.pp={entries:[]};u.observer=new PerformanceObserver(function(e){u.entries=u.entries.concat(e.getEntries())});u.observer.observe({entryTypes:["longtask"]})}})(window,document,"https://apm.volccdn.com/mars-web/apmplus/web/browser.cn.js",1001891,"apmPlus");
+</script>
+<script>
+window.apmPlus("context.set", "project_id", "7690516429887717416");
+window.apmPlus("init",{
+  aid: 1001891,
+  token: '26a8704bd4d34b1698085c787d0c95d0'
+});
+window.apmPlus("start");
+</script>
+<!-- Coze Coding Analytics -->
+<script>
+(function(){
+  function randomUUID(){
+    if(typeof crypto!=="undefined"&&typeof crypto.randomUUID==="function"){
+      return crypto.randomUUID();
+    }
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g,function(c){
+      return(+c^(crypto.getRandomValues(new Uint8Array(1))[0]&(15>>(+c/4)))).toString(16);
+    });
+  }
+
+  function encode(obj){return btoa(JSON.stringify(obj))}
+  function decode(str){try{return JSON.parse(atob(str))}catch(e){return null}}
+
+  function getDeviceId(){
+    var storageKey="__coze_coding_device_info";
+    try{
+      var info=decode(localStorage.getItem(storageKey));
+      if(info&&typeof info.did==="string"){return info.did}
+    }catch(e){}
+    var newInfo={did:randomUUID()};
+    try{localStorage.setItem(storageKey,encode(newInfo))}catch(e){}
+    return newInfo.did;
+  }
+
+  function sendPageViewEvent(){
+    var deviceId=getDeviceId();
+    var projectId="7690516429887717416";
+    var reportURL="https://code.coze.cn/api/coding/deployment/analytics/report?project_id="+encodeURIComponent(projectId)+"&did="+encodeURIComponent(deviceId);
+    try{
+      fetch(reportURL,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          events:[{
+            type:"page_view",
+            url:window.location.href,
+            path:window.location.pathname,
+            referrer:document.referrer,
+            timestamp:Date.now()
+          }]
+        })
+      }).catch(function(){});
+    }catch(e){}
+  }
+
+  if(document.readyState==="complete"){
+    sendPageViewEvent();
+  }else{
+    document.addEventListener("readystatechange",function(){
+      if(document.readyState==="complete"){sendPageViewEvent()}
+    });
+  }
+})();
+</script>
+<!-- WebPro SDK -->
+<script>
+(function(n,e,r,t,a,o,s,i,c,l,f,m,p,u){o="precollect";s="getAttribute";i="addEventListener";c="PerformanceObserver";l=function(e){f=[].slice.call(arguments);f.push(Date.now(),location.href);(e==o?l.p.a:l.q).push(f)};l.q=[];l.p={a:[]};n[a]=l;m=document.createElement("script");m.src=r+"?aid="+t+"&globalName="+a;m.crossOrigin="anonymous";e.getElementsByTagName("head")[0].appendChild(m);if(i in n){l.pcErr=function(e){e=e||n.event;p=e.target||e.srcElement;if(p instanceof Element||p instanceof HTMLElement){n[a](o,"st",{tagName:p.tagName,url:p[s]("href")||p[s]("src")})}else{n[a](o,"err",e.error||e.message)}};l.pcRej=function(e){e=e||n.event;n[a](o,"reject",e.reason||e.detail&&e.detail.reason)};n[i]("error",l.pcErr,true);n[i]("unhandledrejection",l.pcRej,true)}if("PerformanceLongTaskTiming"in n){u=l.pp={entries:[]};u.observer=new PerformanceObserver(function(e){u.entries=u.entries.concat(e.getEntries())});u.observer.observe({entryTypes:["longtask"]})}})(window,document,"https://apm.volccdn.com/mars-web/apmplus/web/browser.cn.js",1001891,"apmPlus");
+</script>
+<script>
+window.apmPlus("context.set", "project_id", "7690516429887717416");
+window.apmPlus("init",{
+  aid: 1001891,
+  token: '26a8704bd4d34b1698085c787d0c95d0'
+});
+window.apmPlus("start");
+</script>
+
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>观察物体（二）· 学生端</title>
+  <link rel="preconnect" href="https://musk-online.fbcontent.cn" crossorigin=""/>
+  <link rel="preconnect" href="https://www.kivicube.com" crossorigin=""/>
+  <link rel="stylesheet" href="css/style.css?v=20261015a"/>
+  <style>
+    /* 课后作业“小奇生成中”过渡卡片动画（20261016 功能一） */
+    @keyframes hwGenPulse { 0%,100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.18) rotate(12deg); } }
+    .hw-gen-emoji { display: inline-block; animation: hwGenPulse 1.2s ease-in-out infinite; }
+    /* 课堂练习提交对错鼓励语弹层（20261016 功能二）：居中大字、绿/橙分色、数秒自动消失 */
+    .praise-pop {
+      position: fixed; left: 50%; top: 38%; z-index: 90;
+      transform: translate(-50%, -50%) scale(.85);
+      max-width: 82%; padding: 18px 30px; border-radius: 18px;
+      font-size: 20px; font-weight: 800; line-height: 1.6; text-align: center;
+      box-shadow: 0 12px 34px rgba(22, 35, 59, .22);
+      opacity: 0; pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .praise-pop.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .praise-pop.ok { background: #e7f7ec; color: #1d7a38; border: 2px solid #58b26a; }
+    .praise-pop.no { background: #fff3e4; color: #b3540a; border: 2px solid #f0a04b; }
+    /* 自我评价 AI 评价卡片补充（20261016 功能三） */
+    .self-eval-stars { margin-top: 8px; font-size: 15px; color: var(--ink-soft); }
+    .self-eval-stars b { color: #f5a623; font-size: 18px; letter-spacing: 2px; }
+    .self-eval-ai { margin-top: 10px; font-size: 14px; font-weight: 800; color: var(--blue-dark); }
+    /* 工具弹层加载提示（20261016 优化二）：覆盖 iframe 区域，load 后隐藏，12s 兜底 */
+    .gm-box { position: relative; }
+    .gm-loading {
+      position: absolute; left: 0; right: 0; top: 45px; bottom: 0; z-index: 5;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: #fff; color: var(--ink-soft); font-weight: 700; font-size: 17px;
+    }
+    .gm-loading.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="emoji">🧊</span>
+    <h1>观察物体（二）· 学生端</h1>
+    <div class="spacer"></div>
+    <div class="who hidden" id="whoBar"></div>
+    <button class="logout-btn hidden" id="logoutBtn" type="button">退出登录</button>
+  </div>
+
+  <div id="minionBar" class="minion hidden">
+    <span class="m-avatar">🦉</span>
+    <div class="m-text" id="minionText"></div>
+  </div>
+  <div id="welcomeBar" class="welcome"></div>
+
+  <div class="wrap">
+    <!-- 入口 -->
+    <div id="enter" class="card enter">
+      <div class="logo">🔭</div>
+      <h2>欢迎进入数学课堂</h2>
+      <div class="tip">《观察物体（二）》· 请输入你的学号</div>
+      <input id="studentIdInput" type="text" inputmode="numeric" placeholder="请输入学号（01-45）" autocomplete="off"/>
+      <button id="studentIdBtn" class="btn block" type="button">确定进入</button>
+      <div id="studentIdErr" class="err-msg" style="color:#e53935;display:none;margin-top:8px;"></div>
+    </div>
+
+    <!-- 主体（进入后显示） -->
+    <div id="main" class="hidden">
+      <div class="tabs" id="tabs">
+        <div class="tab" data-tab="pre">课前小测<span class="lock" data-lock="pre"></span></div>
+        <div class="tab" data-tab="pra">课堂练习<span class="lock" data-lock="pra"></span></div>
+        <div class="tab" data-tab="self">自我评价<span class="lock" data-lock="self"></span></div>
+        <div class="tab" data-tab="hw">课后作业<span class="lock" data-lock="hw"></span></div>
+      </div>
+
+      <div id="view-pre"><!-- 课前小测 --></div>
+      <div id="view-pra" class="hidden"><!-- 课堂练习 --></div>
+      <div id="view-self" class="hidden"><!-- 自我评价 --></div>
+      <div id="view-hw" class="hidden"><!-- 课后作业 --></div>
+    </div>
+  </div>
+
+  <!-- 底部固定容器：上为提交栏、下为三工具栏，纵向排列互不重叠 -->
+  <div id="bottomDock" class="bottom-dock">
+    <div id="submitBar" class="footer-bar hidden">
+      <div class="inner">
+        <div class="fb-info" id="fbInfo"></div>
+        <button class="btn" id="submitBtn">提交</button>
+      </div>
+    </div>
+
+    <!-- 底部三工具栏 -->
+    <div class="bottom-tools">
+      <a class="bt-item" id="toolFeixiang" href="javascript:void(0)">🐘 飞象老师</a>
+      <a class="bt-item" id="toolGoldMiner" href="javascript:void(0)">⛏️ 黄金矿工</a>
+      <a class="bt-item" id="toolKivicube" href="javascript:void(0)">🏛️ 鸟巢</a>
+    </div>
+  </div>
+
+  <!-- 黄金矿工 iframe 弹窗 -->
+  <div id="gmMask" class="gm-mask hidden">
+    <div class="gm-box">
+      <div class="gm-head"><span>⛏️ 黄金矿工</span><button id="gmClose" type="button" class="gm-close">✕ 关闭</button></div>
+      <div class="gm-loading hidden" id="gmLoading"><span class="spin"></span>加载中，请稍候…</div>
+      <iframe id="gmFrame" class="gm-frame" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <!-- 飞象老师 iframe 弹窗 -->
+  <div id="fxMask" class="gm-mask hidden">
+    <div class="gm-box">
+      <div class="gm-head"><span>🐘 飞象老师</span><button id="fxClose" type="button" class="gm-close">✕ 关闭</button></div>
+      <div class="gm-loading hidden" id="fxLoading"><span class="spin"></span>加载中，请稍候…</div>
+      <iframe id="fxFrame" class="gm-frame" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <!-- 鸟巢 iframe 弹窗 -->
+  <div id="kvMask" class="gm-mask hidden">
+    <div class="gm-box">
+      <div class="gm-head"><span>🏛️ 鸟巢</span><button id="kvClose" type="button" class="gm-close">✕ 关闭</button></div>
+      <div class="gm-loading hidden" id="kvLoading"><span class="spin"></span>加载中，请稍候…</div>
+      <iframe id="kvFrame" class="gm-frame" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <script src="js/common.js?v=20261016b"></script>
+  <script src="js/student.js?v=20261016c"></script>
+
+</body></html>
