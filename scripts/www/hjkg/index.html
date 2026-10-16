@@ -1,0 +1,1648 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://www.feixianglaoshi.com https://*.feixianglaoshi.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.feixianglaoshi.com https://*.feixianglaoshi.com; connect-src 'self' https://www.feixianglaoshi.com https://*.feixianglaoshi.com; img-src 'self' data: blob: https://*.fbcontent.cn https://www.feixianglaoshi.com https://*.feixianglaoshi.com; media-src 'self' data: blob: https://*.fbcontent.cn https://www.feixianglaoshi.com https://*.feixianglaoshi.com;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数学黄金矿工</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="assets/zgLDUdmazTYc0B4K6Cor.js"></script>
+    
+    <!-- Anime.js -->
+    <script src="assets/zZZY40t7WJC7UdQCPACm.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FFB300', // 金色
+                        secondary: '#5D4037', // 土壤色
+                        accent: '#E53935', // 红色强调
+                        sky: '#81D4FA'
+                    },
+                    fontFamily: {
+                        sans: ['"Comic Sans MS"', 'Chalkboard SE', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+        }
+        
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .interactive-ui {
+            pointer-events: auto;
+        }
+
+        /* 答题弹窗动画 */
+        .quiz-modal {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .quiz-question-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-height: 160px;
+            margin: 8px 0 10px;
+            overflow: hidden;
+            border-radius: 14px;
+            background: #f8fafc;
+        }
+
+        .quiz-question-visual img {
+            max-width: 100%;
+            max-height: 150px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 12px;
+        }
+
+        .review-list {
+            max-height: 42vh;
+            overflow-y: auto;
+            margin: 14px 0;
+            padding-right: 4px;
+            text-align: left;
+        }
+
+        .review-card {
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 14px;
+            background: #f8fafc;
+            border: 2px solid #dbeafe;
+        }
+
+        .review-card.review-correct { border-color: #86efac; }
+        .review-card.review-wrong { border-color: #fca5a5; }
+        .review-question { font-weight: 700; color: #1f2937; line-height: 1.45; }
+        .review-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+        .review-option {
+            position: relative;
+            padding: 8px 5px;
+            min-height: 42px;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            background: #fff;
+            color: #374151;
+            font-size: 13px;
+            line-height: 1.25;
+            text-align: center;
+        }
+        .review-option.selected { border-color: #ef4444; background: #fee2e2; box-shadow: 0 0 0 3px rgba(239,68,68,.18); }
+        .review-option.correct { border-color: #16a34a; background: #dcfce7; box-shadow: 0 0 0 3px rgba(22,163,74,.18); }
+        .review-option.selected.correct { border-color: #2563eb; background: #dbeafe; box-shadow: 0 0 0 3px rgba(37,99,235,.18); }
+        .review-option.selected::after {
+            content: '你的选择';
+            display: block;
+            margin-top: 3px;
+            color: #dc2626;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .review-option.correct::before {
+            content: '正确答案';
+            display: block;
+            margin-bottom: 3px;
+            color: #15803d;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .review-option.selected.correct::after { content: '你的选择，且正确'; color: #1d4ed8; }
+        .review-answer-note { margin-top: 7px; color: #4b5563; font-size: 12px; }
+
+        /* 题目双图布局：左为观察到的形状，右为三人的观察场景，两图并排互不遮挡 */
+        .visual-pair {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .visual-pair figure {
+            margin: 0;
+            min-width: 0;
+        }
+
+        .visual-inset {
+            flex: 0 0 38%;
+            padding: 4px;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .visual-main {
+            flex: 1 1 58%;
+            padding: 4px;
+            border: 2px solid #93c5fd;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .visual-pair img {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 128px;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+
+        .visual-pair figcaption {
+            margin-top: 3px;
+            color: #1f2937;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.25;
+            text-align: center;
+        }
+
+        .quiz-question-visual:has(.visual-pair) {
+            max-height: 200px;
+            align-items: center;
+            padding: 6px;
+        }
+
+        .review-visual {
+            margin-top: 8px;
+        }
+
+        .review-visual .visual-pair img {
+            max-height: 104px;
+        }
+
+        .review-visual img {
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .quiz-option {
+            min-height: 126px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            overflow: hidden;
+        }
+
+        .option-image-wrap {
+            width: 100%;
+            height: 86px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .option-image-wrap img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .option-image-wrap.crop-wide img {
+            width: 285%;
+            max-width: none;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .option-label {
+            color: #374151;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        /* 纯文字选项（如“上面/右面/前面”）：不渲染图片，保证按钮仍有足够点击高度 */
+        .text-option {
+            min-height: 126px;
+            padding: 12px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .text-option .option-label {
+            font-size: 22px;
+            color: #1f2937;
+        }
+
+        .review-option {
+            min-height: 96px;
+            padding: 7px;
+        }
+
+        .review-option-image {
+            width: 100%;
+            height: 62px;
+            object-fit: contain;
+            border-radius: 7px;
+            background: #fff;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .review-option-label {
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        @media (max-width: 640px) {
+            .quiz-option { min-height: 112px; }
+            .option-image-wrap { height: 72px; }
+            .review-options { grid-template-columns: 1fr; }
+        }
+
+        .miner-img {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            z-index: 5;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        /* 按钮样式 */
+        .btn-game {
+            background: linear-gradient(to bottom, #FFD54F, #FFB300);
+            border: 4px solid #FFF;
+            box-shadow: 0 6px 0 #F57F17, 0 10px 10px rgba(0,0,0,0.3);
+            transition: all 0.1s;
+        }
+        .btn-game:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #F57F17, 0 4px 4px rgba(0,0,0,0.3);
+        }
+
+        .bg-pattern {
+            background-image: url('assets/k8Q6ctNQqZYqSASwEmeFWi.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* 音乐控制按钮样式 */
+        #music-toggle {
+            position: fixed;
+            top: 120px; /* 向下移动，避开时间显示区域 */
+            right: 20px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            pointer-events: auto;
+            font-size: 24px;
+        }
+        #music-toggle:hover { transform: scale(1.1); }
+        .music-on::after { content: '🎵'; }
+        .music-off::after { content: '🔇'; }
+        .music-off { opacity: 0.6; }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:"Comic Sans MS", Chalkboard SE, sans-serif;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0px}.left-0{left:0px}.top-0{top:0px}.z-40{z-index:40}.z-50{z-index:50}.mx-4{margin-left:1rem;margin-right:1rem}.my-4{margin-top:1rem;margin-bottom:1rem}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-2{height:0.5rem}.h-full{height:100%}.w-full{width:100%}.min-w-\[100px\]{min-width:100px}.min-w-\[120px\]{min-width:120px}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.scale-100{--tw-scale-x:1;--tw-scale-y:1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-4{gap:1rem}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.rounded-3xl{border-radius:1.5rem}.rounded-full{border-radius:9999px}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-4{border-width:4px}.border-8{border-width:8px}.border-blue-500{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.border-primary{--tw-border-opacity:1;border-color:rgb(255 179 0 / var(--tw-border-opacity, 1))}.border-white\/30{border-color:rgb(255 255 255 / 0.3)}.bg-black\/50{background-color:rgb(0 0 0 / 0.5)}.bg-black\/60{background-color:rgb(0 0 0 / 0.6)}.bg-black\/80{background-color:rgb(0 0 0 / 0.8)}.bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.bg-gray-200{--tw-bg-opacity:1;background-color:rgb(229 231 235 / var(--tw-bg-opacity, 1))}.bg-gray-900{--tw-bg-opacity:1;background-color:rgb(17 24 39 / var(--tw-bg-opacity, 1))}.bg-secondary\/80{background-color:rgb(93 64 55 / 0.8)}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-4{padding-bottom:1rem}.text-center{text-align:center}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-2xl{font-size:1.5rem;line-height:2rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-5xl{font-size:3rem;line-height:1}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.text-gray-300{--tw-text-opacity:1;color:rgb(209 213 219 / var(--tw-text-opacity, 1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99 / var(--tw-text-opacity, 1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}.text-primary{--tw-text-opacity:1;color:rgb(255 179 0 / var(--tw-text-opacity, 1))}.text-secondary{--tw-text-opacity:1;color:rgb(93 64 55 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-yellow-300{--tw-text-opacity:1;color:rgb(253 224 71 / var(--tw-text-opacity, 1))}.opacity-90{opacity:0.9}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}</style><style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:"Comic Sans MS", Chalkboard SE, sans-serif;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0px}.left-0{left:0px}.top-0{top:0px}.z-40{z-index:40}.z-50{z-index:50}.mx-4{margin-left:1rem;margin-right:1rem}.my-4{margin-top:1rem;margin-bottom:1rem}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-2{height:0.5rem}.h-full{height:100%}.w-full{width:100%}.min-w-\[100px\]{min-width:100px}.min-w-\[120px\]{min-width:120px}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.scale-100{--tw-scale-x:1;--tw-scale-y:1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-4{gap:1rem}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.rounded-3xl{border-radius:1.5rem}.rounded-full{border-radius:9999px}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-4{border-width:4px}.border-8{border-width:8px}.border-blue-500{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.border-primary{--tw-border-opacity:1;border-color:rgb(255 179 0 / var(--tw-border-opacity, 1))}.border-white\/30{border-color:rgb(255 255 255 / 0.3)}.bg-black\/50{background-color:rgb(0 0 0 / 0.5)}.bg-black\/60{background-color:rgb(0 0 0 / 0.6)}.bg-black\/80{background-color:rgb(0 0 0 / 0.8)}.bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.bg-gray-200{--tw-bg-opacity:1;background-color:rgb(229 231 235 / var(--tw-bg-opacity, 1))}.bg-gray-900{--tw-bg-opacity:1;background-color:rgb(17 24 39 / var(--tw-bg-opacity, 1))}.bg-secondary\/80{background-color:rgb(93 64 55 / 0.8)}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-4{padding-bottom:1rem}.text-center{text-align:center}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-2xl{font-size:1.5rem;line-height:2rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-5xl{font-size:3rem;line-height:1}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.text-gray-300{--tw-text-opacity:1;color:rgb(209 213 219 / var(--tw-text-opacity, 1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99 / var(--tw-text-opacity, 1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}.text-primary{--tw-text-opacity:1;color:rgb(255 179 0 / var(--tw-text-opacity, 1))}.text-secondary{--tw-text-opacity:1;color:rgb(93 64 55 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-yellow-300{--tw-text-opacity:1;color:rgb(253 224 71 / var(--tw-text-opacity, 1))}.opacity-90{opacity:0.9}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}</style><style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:"Comic Sans MS", Chalkboard SE, sans-serif;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0px}.left-0{left:0px}.top-0{top:0px}.z-40{z-index:40}.z-50{z-index:50}.mx-4{margin-left:1rem;margin-right:1rem}.my-4{margin-top:1rem;margin-bottom:1rem}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-2{height:0.5rem}.h-full{height:100%}.w-full{width:100%}.min-w-\[100px\]{min-width:100px}.min-w-\[120px\]{min-width:120px}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.scale-100{--tw-scale-x:1;--tw-scale-y:1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-4{gap:1rem}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.rounded-3xl{border-radius:1.5rem}.rounded-full{border-radius:9999px}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-4{border-width:4px}.border-8{border-width:8px}.border-blue-500{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.border-primary{--tw-border-opacity:1;border-color:rgb(255 179 0 / var(--tw-border-opacity, 1))}.border-white\/30{border-color:rgb(255 255 255 / 0.3)}.bg-black\/50{background-color:rgb(0 0 0 / 0.5)}.bg-black\/60{background-color:rgb(0 0 0 / 0.6)}.bg-black\/80{background-color:rgb(0 0 0 / 0.8)}.bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.bg-gray-200{--tw-bg-opacity:1;background-color:rgb(229 231 235 / var(--tw-bg-opacity, 1))}.bg-gray-900{--tw-bg-opacity:1;background-color:rgb(17 24 39 / var(--tw-bg-opacity, 1))}.bg-secondary\/80{background-color:rgb(93 64 55 / 0.8)}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-4{padding-bottom:1rem}.text-center{text-align:center}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-2xl{font-size:1.5rem;line-height:2rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-5xl{font-size:3rem;line-height:1}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.text-gray-300{--tw-text-opacity:1;color:rgb(209 213 219 / var(--tw-text-opacity, 1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99 / var(--tw-text-opacity, 1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}.text-primary{--tw-text-opacity:1;color:rgb(255 179 0 / var(--tw-text-opacity, 1))}.text-secondary{--tw-text-opacity:1;color:rgb(93 64 55 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-yellow-300{--tw-text-opacity:1;color:rgb(253 224 71 / var(--tw-text-opacity, 1))}.opacity-90{opacity:0.9}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}</style><style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:"Comic Sans MS", Chalkboard SE, sans-serif;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.pointer-events-none{pointer-events:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0px}.left-0{left:0px}.top-0{top:0px}.z-40{z-index:40}.z-50{z-index:50}.mx-4{margin-left:1rem;margin-right:1rem}.my-4{margin-top:1rem;margin-bottom:1rem}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mt-1{margin-top:0.25rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mt-3{margin-top:0.75rem}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-2{height:0.5rem}.h-full{height:100%}.w-full{width:100%}.min-w-\[100px\]{min-width:100px}.min-w-\[120px\]{min-width:120px}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.scale-100{--tw-scale-x:1;--tw-scale-y:1;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-4{gap:1rem}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.rounded-3xl{border-radius:1.5rem}.rounded-full{border-radius:9999px}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-4{border-width:4px}.border-8{border-width:8px}.border-blue-500{--tw-border-opacity:1;border-color:rgb(59 130 246 / var(--tw-border-opacity, 1))}.border-primary{--tw-border-opacity:1;border-color:rgb(255 179 0 / var(--tw-border-opacity, 1))}.border-white\/30{border-color:rgb(255 255 255 / 0.3)}.border-gray-200{--tw-border-opacity:1;border-color:rgb(229 231 235 / var(--tw-border-opacity, 1))}.bg-gray-900{--tw-bg-opacity:1;background-color:rgb(17 24 39 / var(--tw-bg-opacity, 1))}.bg-black\/50{background-color:rgb(0 0 0 / 0.5)}.bg-black\/60{background-color:rgb(0 0 0 / 0.6)}.bg-black\/80{background-color:rgb(0 0 0 / 0.8)}.bg-blue-500{--tw-bg-opacity:1;background-color:rgb(59 130 246 / var(--tw-bg-opacity, 1))}.bg-gray-200{--tw-bg-opacity:1;background-color:rgb(229 231 235 / var(--tw-bg-opacity, 1))}.bg-secondary\/80{background-color:rgb(93 64 55 / 0.8)}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-gray-100{--tw-bg-opacity:1;background-color:rgb(243 244 246 / var(--tw-bg-opacity, 1))}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-4{padding-bottom:1rem}.text-left{text-align:left}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-gray-300{--tw-text-opacity:1;color:rgb(209 213 219 / var(--tw-text-opacity, 1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-gray-600{--tw-text-opacity:1;color:rgb(75 85 99 / var(--tw-text-opacity, 1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}.text-primary{--tw-text-opacity:1;color:rgb(255 179 0 / var(--tw-text-opacity, 1))}.text-secondary{--tw-text-opacity:1;color:rgb(93 64 55 / var(--tw-text-opacity, 1))}.text-yellow-300{--tw-text-opacity:1;color:rgb(253 224 71 / var(--tw-text-opacity, 1))}.text-green-600{--tw-text-opacity:1;color:rgb(22 163 74 / var(--tw-text-opacity, 1))}.opacity-90{opacity:0.9}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:bg-blue-100:hover{--tw-bg-opacity:1;background-color:rgb(219 234 254 / var(--tw-bg-opacity, 1))}</style><style id="imt-injected-styles">
+      /* 翻译加载器样式 */
+      .imt-loading-indicator {
+        vertical-align: middle !important;
+        width: 10px !important;
+        height: 10px !important;
+        display: inline-block !important;
+        margin: 0 4px !important;
+        border: 2px rgba(221, 244, 255, 0.6) solid !important;
+        border-top: 2px rgba(0, 0, 0, 0.375) solid !important;
+        border-left: 2px rgba(0, 0, 0, 0.375) solid !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        -webkit-animation: imt-loading-animation 0.6s infinite linear !important;
+        animation: imt-loading-animation 0.6s infinite linear !important;
+      }
+
+      @-webkit-keyframes imt-loading-animation {
+        from {
+          -webkit-transform: rotate(0deg);
+        }
+
+        to {
+          -webkit-transform: rotate(359deg);
+        }
+      }
+
+      @keyframes imt-loading-animation {
+        from {
+          transform: rotate(0deg);
+        }
+
+        to {
+          transform: rotate(359deg);
+        }
+      }
+      .se_imt_html {
+        height: 100%;
+      }
+      .se_imt_html body {
+        position: relative;
+        min-height: 100%;
+        top: 40px;
+      }
+      @media print {
+        #imt-webext {
+          display: none !important;
+        }
+      }
+    </style><script type="application/json" id="fx-resource-config" data-fx-resource-runtime="2">{"chatId":"2B46721B6C602F17CCE0BADFD69BA137","env":"online","onlineUrl":"https://musk-online.fbcontent.cn/pub-musk-ai-studio/workflow/file/document/jqtecZVeMXzWE32GK2X3K2.html?v=1"}</script><script async src="https://www.feixianglaoshi.com/resource-runtime/v2.js" data-fx-resource-runtime="2"></script></head>
+    <body class="bg-gray-900 text-white">
+
+    <!-- 背景层 -->
+    <div class="absolute inset-0 bg-pattern opacity-90"></div>
+    
+    <!-- 音乐控制 -->
+    <div id="music-toggle" class="music-off" title="开关音乐"></div>
+    
+    <!-- 隐藏的音频元素 -->
+    <audio id="bgm-audio-element" loop="" preload="none"></audio>
+    
+    <!-- 矿工装饰 -->
+    <img src="assets/NQLsaQt5PhyRojkBLXRtWY.jpg" class="miner-img" alt="Miner">
+
+    <!-- 游戏画布 -->
+    <canvas id="game-canvas" width="1439" height="598"></canvas>
+
+    <!-- UI 层 -->
+    <div class="ui-layer flex flex-col justify-between p-4">
+        <!-- 顶部信息栏：改为左右布局，避开中间矿工 -->
+        <div class="flex justify-between items-start w-full">
+            <!-- 左侧：分数信息 -->
+            <div class="flex flex-col gap-2">
+                <div class="bg-black/50 rounded-xl p-3 border-2 border-primary backdrop-blur-sm min-w-[120px]">
+                    <div class="text-xs text-gray-300">目标分数</div>
+                    <div class="text-xl font-bold text-primary" id="target-score">400</div>
+                </div>
+                
+                <div class="bg-black/50 rounded-xl p-3 border-2 border-primary backdrop-blur-sm min-w-[120px]">
+                    <div class="text-xs text-gray-300">当前分数</div>
+                    <div class="text-2xl font-bold text-yellow-300" id="current-score">0</div>
+                </div>
+            </div>
+
+            <!-- 右侧：时间信息 -->
+            <div class="bg-black/50 rounded-xl p-3 border-2 border-primary backdrop-blur-sm min-w-[100px] text-center">
+                <div class="text-xs text-gray-300">剩余时间</div>
+                <div class="text-2xl font-bold text-white" id="time-left">30</div>
+            </div>
+        </div>
+
+        <!-- 底部关卡信息 -->
+        <div class="text-center pb-4">
+            <span class="bg-secondary/80 px-6 py-2 rounded-full text-lg font-bold border border-white/30">
+                第 <span id="level-display">1</span> 关
+            </span>
+        </div>
+    </div>
+
+    <!-- 开始/暂停/结束 覆盖层 -->
+    <div id="overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm interactive-ui">
+        <div class="bg-white text-gray-800 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border-8 border-primary transform transition-all scale-100">
+            <h1 class="text-4xl font-bold mb-2 text-green-600" id="overlay-title">数学黄金矿工</h1>
+            <p class="text-gray-600 mb-8 text-lg" id="overlay-desc">用数学知识挖去宝藏</p>
+            
+            <div class="space-y-4">
+                <div id="review-panel" class="text-left hidden">
+                    <div id="final-score" class="text-xl font-bold text-secondary text-center">最终得分：580</div>
+                    <div id="final-result" class="mt-1 text-base font-bold text-center">答对 4 题，答错 0 题</div>
+                    <div id="review-list" class="review-list"><div class="mt-3 mb-1 font-bold text-green-600">回答正确的题目</div><div class="review-card review-correct"><div class="review-question">第1题：从前面观察投票箱，是什么样的？</div><div class="review-visual"><img src="assets/36mZQDXN5hJo4dbfbigdug.png" alt="题目示意图"></div><div class="review-options"><div class="review-option selected correct"><img class="review-option-image " src="assets/FyTQbhj2BhLkKnhejSymDE.png" alt="第1个选项" loading="lazy"><div class="review-option-label">第1个选项</div></div><div class="review-option"><img class="review-option-image" src="assets/zAWUwSVVNMQWKnA7miV7iM.png" alt="第2个选项" loading="lazy"><div class="review-option-label">第2个选项</div></div><div class="review-option"><img class="review-option-image" src="assets/earFaNSx6Db8kZKNnruiQC.png" alt="第3个选项" loading="lazy"><div class="review-option-label">第3个选项</div></div></div><div class="review-answer-note">你的选择：第1个选项；正确答案：第1个选项</div></div><div class="review-card review-correct"><div class="review-question">第2题：这幅图是从牛奶的（ ）观察到的？</div><div class="review-visual"><img src="assets/U3wKMiQNvyTj94GHH7Bnyd.png" alt="题目示意图"></div><div class="review-options"><div class="review-option"><div class="review-option-label">上面</div></div><div class="review-option"><div class="review-option-label">右面</div></div><div class="review-option selected correct"><div class="review-option-label">前面</div></div></div><div class="review-answer-note">你的选择：前面；正确答案：前面</div></div><div class="review-card review-correct"><div class="review-question">第3题：从前面、右面、上面看一个物体的形状都相同，她看到的可能是？</div><div class="review-options"><div class="review-option selected correct"><img class="review-option-image " src="assets/XCMwLkNb8wJoJuG2LKyVph.png" alt="第1张图" loading="lazy"><div class="review-option-label">第1张图</div></div><div class="review-option"><img class="review-option-image " src="assets/5Czbeaj7CP84VPF4GTF5Cf.png" alt="第2张图" loading="lazy"><div class="review-option-label">第2张图</div></div><div class="review-option"><img class="review-option-image " src="assets/LA4uNxaPa6ngcFkZfD6gjW.png" alt="第3张图" loading="lazy"><div class="review-option-label">第3张图</div></div></div><div class="review-answer-note">你的选择：第1张图；正确答案：第1张图</div></div><div class="review-card review-correct"><div class="review-question">第4题：从前面看一个物体是正方形，这个物体可能是（ ）</div><div class="review-options"><div class="review-option selected correct"><img class="review-option-image " src="assets/BhKeaCicpT7vLBGELYxSw5.png" alt="第1张图" loading="lazy"><div class="review-option-label">第1张图</div></div><div class="review-option"><img class="review-option-image " src="assets/mNZp9qGvhc8CUhP98iAMZL.png" alt="第2张图" loading="lazy"><div class="review-option-label">第2张图</div></div><div class="review-option"><img class="review-option-image " src="assets/GQQ3fXnLbJcp3Myv7nUzu4.png" alt="第3张图" loading="lazy"><div class="review-option-label">第3张图</div></div></div><div class="review-answer-note">你的选择：第1张图；正确答案：第1张图</div></div></div>
+                </div>
+                <button id="start-btn" class="btn-game w-full py-4 rounded-xl text-2xl font-bold text-secondary" tabindex="0">开始游戏</button>
+                <div id="start-tip" class="text-sm text-gray-500 mt-4">
+                    点击屏幕发射钩子<br>抓到金块后回答数学问题
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 答题弹窗 (默认隐藏) -->
+    <div id="quiz-modal" class="fixed inset-0 z-40 flex items-center justify-center bg-black/60 interactive-ui quiz-modal hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl border-4 border-blue-500 relative overflow-hidden">
+            <!-- 装饰背景 -->
+            <div class="absolute top-0 left-0 w-full h-2 bg-blue-500"></div>
+            
+            <div class="text-center mb-6">
+                <div class="text-gray-500 text-sm mb-1">抓到宝藏了！请回答数学问题：</div>
+                <div id="question-visual" class="quiz-question-visual hidden"></div>
+                <div class="text-2xl font-bold text-gray-800 my-4" id="question-text">从前面看一个物体是正方形，这个物体可能是（ ）</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4" id="options-container"><button type="button" class="quiz-option bg-gray-100 hover:bg-blue-100 text-gray-800 rounded-xl border-2 border-gray-200 transition-colors"><span class="option-image-wrap crop-full"><img src="assets/BhKeaCicpT7vLBGELYxSw5.png" alt="第1张图" loading="eager"></span><span class="option-label">第1张图</span></button><button type="button" class="quiz-option bg-gray-100 hover:bg-blue-100 text-gray-800 rounded-xl border-2 border-gray-200 transition-colors"><span class="option-image-wrap crop-full"><img src="assets/mNZp9qGvhc8CUhP98iAMZL.png" alt="第2张图" loading="eager"></span><span class="option-label">第2张图</span></button><button type="button" class="quiz-option bg-gray-100 hover:bg-blue-100 text-gray-800 rounded-xl border-2 border-gray-200 transition-colors"><span class="option-image-wrap crop-full"><img src="assets/GQQ3fXnLbJcp3Myv7nUzu4.png" alt="第3张图" loading="eager"></span><span class="option-label">第3张图</span></button></div>
+            
+            <!-- 倒计时条 -->
+            <div class="w-full bg-gray-200 h-2 mt-6 rounded-full overflow-hidden">
+                <div id="quiz-timer-bar" class="h-full bg-blue-500 w-full" style="width: 86.8775%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 开始游戏语音播报 -->
+    <audio id="start-voice" src="assets/24RgohhsKfG93YatiSLCWZ.mp3" preload="auto"></audio>
+
+    <!-- 黄金矿工游戏过程循环音乐：无语音、轻柔节奏 -->
+    <audio id="bgm-audio" src="assets/bfa2152ebbf5424b8a6eb7cf68d12f01.wav" preload="auto" loop=""></audio>
+
+    <script type="module">
+        // 游戏配置
+        const CONFIG = {
+            hookSpeed: 8,
+            hookRotateSpeed: 0.015, // 降低摆动速度 (原0.03 -> 0.015)
+            hookMaxAngle: 70 * Math.PI / 180,
+            ropeLength: 100,
+            bombRadius: 150,
+            stoneSlowMultiplier: 0.42,
+            colors: {
+                gold: ['#FFD54F', '#FF6F00'],
+                stone: ['#9E9E9E', '#424242'],
+                diamond: ['#4FC3F7', '#0288D1'],
+                bag: ['#EF5350', '#B71C1C']
+            }
+        };
+
+        // 游戏状态
+        const STATE = {
+            IDLE: 'IDLE',       // 钩子摆动中
+            SHOOT: 'SHOOT',     // 钩子发射中
+            GRAB: 'GRAB',       // 抓取返回中
+            QUIZ: 'QUIZ',       // 答题中
+            PAUSE: 'PAUSE',     // 暂停/结束
+            LEVEL_TRANSITION: 'TRANSITION'
+        };
+
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('game-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.width = window.innerWidth;
+                this.height = window.innerHeight;
+                
+                this.state = STATE.PAUSE;
+                this.level = 1;
+                this.score = 0;
+                this.targetScore = 400;
+                this.timeLeft = 30;
+                this.lastTime = 0;
+                this.questionCursor = 0;
+                this.answerHistory = [];
+                this.correctCount = 0;
+                this.wrongCount = 0;
+                
+                this.hook = {
+                    x: this.width / 2,
+                    y: 100,
+                    angle: 0,
+                    length: CONFIG.ropeLength,
+                    direction: 1, // 1: right, -1: left
+                    status: 'SWING', // SWING, SHOOT, REWIND
+                    grabbedItem: null,
+                    speed: CONFIG.hookSpeed,
+                    slowedByStone: false
+                };
+                
+                this.swingTime = 0; // 用于正弦摆动
+
+                this.items = [];
+                this.particles = [];
+                
+                // 资源
+                this.assets = {
+                    hook: new Image(),
+                    gold: new Image(),
+                    stone: new Image(),
+                    bag: new Image(),
+                    bomb: new Image()
+                };
+                this.assets.hook.src = 'assets/wGcr6GtCEg5r3kbyujYEx5.jpg';
+                this.assets.gold.src = 'assets/JgsVqkj9nENiKbFLrbfhb4.jpg';
+                this.assets.stone.src = 'assets/VGDYMNrhTVDCA77scsz39U.jpg';
+                this.assets.bag.src = 'assets/od24EUJfxSwkgHcXXmLyLM.jpg';
+                this.assets.bomb.src = 'assets/LhmCeS9B7quXRih24hA696.jpg';
+                
+                this.audio = document.getElementById('bgm-audio');
+                this.startVoice = document.getElementById('start-voice');
+                this.audio.volume = 0.12;
+                this.audio.loop = true;
+                this.initMusic();
+                this.initEvents();
+                this.resize();
+                
+                // 启动循环
+                requestAnimationFrame(this.loop.bind(this));
+            }
+
+            resize() {
+                this.width = window.innerWidth;
+                this.height = window.innerHeight;
+                this.canvas.width = this.width;
+                this.canvas.height = this.height;
+                this.hook.x = this.width / 2;
+            }
+
+            initMusic() {
+                this.bgm = document.getElementById('bgm-audio');
+                this.bgm.loop = true;
+                this.bgm.volume = 0.12;
+                this.isMusicPlaying = false;
+                const toggle = document.getElementById('music-toggle');
+                toggle.onclick = (e) => {
+                    e.stopPropagation();
+                    if (this.isMusicPlaying) {
+                        this.bgm.pause();
+                        this.isMusicPlaying = false;
+                        toggle.className = 'music-off';
+                    } else {
+                        this.startBackgroundMusic();
+                    }
+                };
+            }
+
+            startBackgroundMusic() {
+                if (!this.bgm) return;
+                this.bgm.loop = true;
+                this.bgm.volume = 0.12;
+                const toggle = document.getElementById('music-toggle');
+                this.bgm.play().then(() => {
+                    this.isMusicPlaying = true;
+                    toggle.className = 'music-on';
+                }).catch(() => {
+                    this.isMusicPlaying = false;
+                    toggle.className = 'music-off';
+                });
+            }
+
+            initEvents() {
+                window.addEventListener('resize', () => this.resize());
+                
+                // 点击发射
+                const shootHandler = (e) => {
+                    if (e.target.closest('.interactive-ui')) return; // 点击UI不触发
+                    if (this.state === STATE.IDLE) {
+                        // 新一轮发射恢复基础速度；石头的减速只作用于当前抓取后的回收过程。
+                        this.hook.speed = CONFIG.hookSpeed;
+                        this.hook.slowedByStone = false;
+                        this.hook.status = 'SHOOT';
+                        this.state = STATE.SHOOT;
+                    }
+                };
+                
+                window.addEventListener('mousedown', shootHandler);
+                window.addEventListener('touchstart', shootHandler);
+
+                // UI 按钮
+                document.getElementById('start-btn').onclick = () => {
+                    if (this.level > 2 || document.getElementById('review-panel').classList.contains('hidden') === false) {
+                        this.startGame();
+                        return;
+                    }
+                    if (this.state === STATE.PAUSE && this.level === 2 && this.levelFinished) {
+                        this.levelFinished = false;
+                        document.getElementById('overlay').classList.add('hidden');
+                        this.startLevel();
+                        return;
+                    }
+                    this.startGame();
+                };
+            }
+
+            playAudio(start, duration) {
+                // 本游戏不播放开场语音；背景音乐只由 startBackgroundMusic() 控制。
+                return;
+            }
+
+            playCorrectSound() {
+                // 使用 Web Audio API 合成简单的正确音效
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+                
+                // 也可以尝试播放预制音频的第二段
+                // this.playAudio(4.5, 2.5); 
+            }
+
+            playWrongSound() {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            }
+
+            playEndSound(success) {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const notes = success ? [523, 659, 784, 1046] : [392, 330, 262];
+                notes.forEach((frequency, index) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = success ? 'sine' : 'triangle';
+                    osc.frequency.value = frequency;
+                    const start = ctx.currentTime + index * (success ? 0.12 : 0.16);
+                    gain.gain.setValueAtTime(0.0001, start);
+                    gain.gain.exponentialRampToValueAtTime(0.22, start + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, start + (success ? 0.24 : 0.32));
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(start);
+                    osc.stop(start + (success ? 0.26 : 0.34));
+                });
+            }
+
+            initLevel() {
+                this.items = [];
+                // 单关固定配置：2个大金块、3个小金块、1个立体小钻石、2个大石头、1个小石头、1个炸药包。
+                for (let i = 0; i < 2; i++) this.createItem('gold', 'large');
+                for (let i = 0; i < 3; i++) this.createItem('gold', 'small');
+                this.createItem('diamond', 'small');
+                this.createItem('stone', 'large');
+                this.createItem('stone', 'large');
+                this.createItem('stone', 'small');
+                this.createItem('bomb');
+            }
+
+            createItem(type, size = 'medium') {
+                let item = {
+                    type: type,
+                    size: size,
+                    quiz: type === 'gold' || type === 'diamond',
+                    rotation: Math.random() * Math.PI * 2
+                };
+
+                // 尝试找到不重叠的位置
+                let attempts = 0;
+                let validPosition = false;
+                while (!validPosition && attempts < 50) {
+                    item.x = Math.random() * (this.width - 100) + 50;
+                    item.y = Math.random() * (this.height - 300) + 250;
+                    
+                    // 设置属性
+                    if (type === 'gold') {
+                        // 放大金块显示与抓取范围，方便学生对准
+                        item.radius = size === 'large' ? 68 : 44;
+                        item.weight = size === 'large' ? 2.6 : 1.4;
+                        // 大金块150分、小金块100分；6件答题宝藏满分780分，达到400分即可过关
+                        item.score = size === 'large' ? 150 : 100;
+                    } else if (type === 'stone') {
+                        item.radius = size === 'large' ? 58 : 38;
+                        item.weight = size === 'large' ? 5 : 3;
+                        item.score = 0;
+                    } else if (type === 'diamond') {
+                        item.radius = 28;
+                        item.weight = 1;
+                        item.score = 180;
+                    } else if (type === 'bomb') {
+                        item.radius = 28;
+                        item.weight = 2;
+                        item.score = 0;
+                    }
+
+                    // 碰撞检测 (减小间距使之更密集)
+                    validPosition = true;
+                    for (let other of this.items) {
+                        const dx = item.x - other.x;
+                        const dy = item.y - other.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < item.radius + other.radius + 2) {
+                            validPosition = false;
+                            break;
+                        }
+                    }
+                    attempts++;
+                }
+
+                if (validPosition) {
+                    this.items.push(item);
+                }
+            }
+
+            startGame() {
+                document.getElementById('overlay').classList.add('hidden');
+                document.getElementById('review-panel').classList.add('hidden');
+                document.getElementById('start-tip').classList.remove('hidden');
+                document.getElementById('start-btn').innerText = '开始游戏';
+                this.score = 0;
+                this.level = 1;
+                this.questionCursor = 0;
+                this.answerHistory = [];
+                this.correctCount = 0;
+                this.wrongCount = 0;
+                this.levelFinished = false;
+                this.finalized = false;
+                this.startLevel();
+                if (this.startVoice) {
+                    this.startVoice.currentTime = 0;
+                    this.startVoice.play().catch(() => {});
+                }
+                if (this.bgm && this.isMusicPlaying === false) {
+                    this.startBackgroundMusic();
+                }
+            }
+
+            startLevel() {
+                this.state = STATE.IDLE;
+                this.timeLeft = 30;
+                this.targetScore = 400;
+                this.totalLevels = 1;
+                this.levelFinished = false;
+                this.hook.status = 'SWING';
+                this.hook.length = CONFIG.ropeLength;
+                this.hook.grabbedItem = null;
+                this.hook.speed = CONFIG.hookSpeed;
+                this.hook.slowedByStone = false;
+                this.updateUI();
+                document.getElementById('time-left').innerText = this.timeLeft;
+                this.initLevel();
+
+                if (this.timerInterval) clearInterval(this.timerInterval);
+                this.timerInterval = setInterval(() => {
+                    if (this.state !== STATE.PAUSE && this.state !== STATE.QUIZ) {
+                        this.timeLeft--;
+                        document.getElementById('time-left').innerText = this.timeLeft;
+                        if (this.timeLeft <= 0) this.endLevel();
+                    }
+                }, 1000);
+            }
+
+            endLevel() {
+                if (this.levelFinished || this.finalized) return;
+                this.levelFinished = true;
+                this.finalized = true;
+                clearInterval(this.timerInterval);
+                this.state = STATE.PAUSE;
+                if (this.bgm) {
+                    this.bgm.pause();
+                    this.bgm.currentTime = 0;
+                    this.isMusicPlaying = false;
+                    const musicToggle = document.getElementById('music-toggle');
+                    if (musicToggle) musicToggle.className = 'music-off';
+                }
+
+                const overlay = document.getElementById('overlay');
+                const title = document.getElementById('overlay-title');
+                const desc = document.getElementById('overlay-desc');
+                const btn = document.getElementById('start-btn');
+                const tip = document.getElementById('start-tip');
+                overlay.classList.remove('hidden');
+                tip.classList.add('hidden');
+
+                const success = this.score >= 400;
+                this.playEndSound(success);
+                title.innerText = success ? '挑战成功！' : '游戏结束';
+                title.className = success ? 'text-4xl font-bold mb-2 text-green-600' : 'text-4xl font-bold mb-2 text-red-600';
+                desc.innerText = success
+                    ? `最终得分：${this.score}，达到400分目标！`
+                    : `最终得分：${this.score}，未达到400分目标。`;
+                btn.innerText = '重新开始';
+                this.renderReview();
+                btn.onclick = () => this.startGame();
+            }
+
+            updateUI() {
+                document.getElementById('current-score').innerText = this.score;
+                document.getElementById('target-score').innerText = this.targetScore;
+                document.getElementById('level-display').innerText = this.level;
+            }
+
+            // 生成装饰图规律题
+            legacyGenerateQuiz(item) {
+                const difficulty = item.radius > 60 ? 2 : (item.radius > 40 ? 1 : 0);
+                
+                // 定义更丰富的规律库
+                const patternPool = [
+                    // AB 模式
+                    { items: ['🔴', '🔵'], seq: [0, 1, 0, 1, 0], type: 'color' },
+                    { items: ['▲', '■'], seq: [0, 1, 0, 1, 0], type: 'shape' },
+                    { items: ['🏮', '🏮'], seq: [0, 1, 0, 1, 0], type: 'size', labels: ['(大)', '(小)'] },
+                    { items: ['⭐', '🌙'], seq: [0, 1, 0, 1, 0], type: 'symbol' },
+                    
+                    // ABC 模式
+                    { items: ['🍎', '🍌', '🍇'], seq: [0, 1, 2, 0, 1], type: 'fruit' },
+                    { items: ['🔴', '🟡', '🔵'], seq: [0, 1, 2, 0, 1], type: 'color' },
+                    { items: ['🐱', '🐶', '🐰'], seq: [0, 1, 2, 0, 1], type: 'animal' },
+                    
+                    // AAB 模式
+                    { items: ['🎈', '🎁'], seq: [0, 0, 1, 0, 0], type: 'gift' },
+                    { items: ['🌸', '🍀'], seq: [0, 0, 1, 0, 0], type: 'nature' },
+                    
+                    // ABB 模式
+                    { items: ['☀️', '☁️'], seq: [0, 1, 1, 0, 1], type: 'weather' },
+                    { items: ['🚗', '🚲'], seq: [0, 1, 1, 0, 1], type: 'transport' }
+                ];
+
+                // 根据难度筛选
+                let availablePatterns;
+                if (difficulty === 0) {
+                    availablePatterns = patternPool.filter(p => p.seq.length <= 5 && p.items.length === 2);
+                } else if (difficulty === 1) {
+                    availablePatterns = patternPool.filter(p => p.items.length >= 2);
+                } else {
+                    availablePatterns = patternPool;
+                }
+
+                // 随机选一个规律
+                const pattern = availablePatterns[Math.floor(Math.random() * availablePatterns.length)];
+                
+                // 核心逻辑：计算下一个索引
+                // 规律是循环的，长度为 pattern.items.length
+                const nextIdxInSeq = pattern.seq.length % pattern.items.length;
+                const correctIdx = pattern.seq[nextIdxInSeq]; 
+                // 注意：这里要严格遵循规律。如果 seq 是 [0,1,2,0,1]，下一个必然是 2
+                const nextVal = pattern.seq[pattern.seq.length % pattern.seq.length]; // 这是一个占位逻辑
+                
+                // 重新计算正确答案：取序列的下一个循环位置
+                const finalCorrectIdx = pattern.seq.length % (pattern.items.length === 2 && pattern.seq[0]===pattern.seq[1] ? 3 : pattern.items.length);
+                // 简化逻辑：直接取序列模式的下一项
+                let correctAns;
+                if (pattern.seq[0] === 0 && pattern.seq[1] === 1 && pattern.seq[2] === 2) { // ABC
+                    correctAns = pattern.items[2]; // [0,1,2,0,1] -> 2
+                } else if (pattern.seq[0] === 0 && pattern.seq[1] === 0) { // AAB
+                    correctAns = pattern.items[1]; // [0,0,1,0,0] -> 1
+                } else if (pattern.seq[1] === 1 && pattern.seq[2] === 1) { // ABB
+                    correctAns = pattern.items[1]; // [0,1,1,0,1] -> 1
+                } else { // AB
+                    correctAns = pattern.items[1]; // [0,1,0,1,0] -> 1
+                }
+
+                // 格式化显示
+                const displayItems = pattern.seq.map(i => {
+                    let itemStr = pattern.items[i];
+                    if (pattern.labels) itemStr += pattern.labels[i];
+                    return itemStr;
+                });
+
+                // 重新校准正确答案的显示文本
+                let correctDisplay = pattern.items[pattern.seq.length % pattern.items.length];
+                if (pattern.labels) correctDisplay += pattern.labels[pattern.seq.length % pattern.items.length];
+                
+                // 特殊处理 AAB/ABB 等非简单循环
+                if (pattern.seq[0] === 0 && pattern.seq[1] === 0) { // AAB: 0,0,1,0,0 -> 下一个是 1
+                    correctDisplay = (pattern.seq.length % 3 === 2) ? pattern.items[1] : pattern.items[0];
+                }
+
+                // 构造干扰项
+                const allPossible = ['🔴', '🔵', '🟡', '▲', '■', '🏮(大)', '🏮(小)', '🍎', '🍌', '🍇', '🐱', '🐶', '🐰', '⭐', '🌙', '🎈', '🎁', '🌸', '🍀', '☀️', '☁️'];
+                let options = [correctDisplay];
+                while (options.length < 4) {
+                    let fake = allPossible[Math.floor(Math.random() * allPossible.length)];
+                    if (!options.includes(fake)) options.push(fake);
+                }
+                options.sort(() => Math.random() - 0.5);
+
+                return {
+                    question: displayItems.join(' ') + ' ?',
+                    answer: correctDisplay,
+                    options: options
+                };
+            }
+
+            generateQuiz(item) {
+                const bank = [
+                    {
+                        question: '从前面观察投票箱，是什么样的？',
+                        image: 'assets/GVge7qNYGraVd8WQqNPYJF.png',
+                        options: [
+                            { label: '第1个选项', src: 'assets/FyTQbhj2BhLkKnhejSymDE.png' },
+                            { label: '第2个选项', src: 'assets/zAWUwSVVNMQWKnA7miV7iM.png' },
+                            { label: '第3个选项', src: 'assets/earFaNSx6Db8kZKNnruiQC.png' }
+                        ],
+                        answerIndex: 0
+                    },
+                    {
+                        question: '这幅图①是从牛奶盒的（         ）观察到的？',
+                        image: 'assets/Zu3Kt4be2KNnp5rxQu4fCn.png',
+                        cornerImage: 'assets/ArC6sinLSLtRfXx8VHCZq8.png',
+                        options: [
+                            { label: '上面' },
+                            { label: '右面' },
+                            { label: '前面' }
+                        ],
+                        answerIndex: 2
+                    },
+                    {
+                        question: '从前面、右面、上面看一个物体的形状都相同，她看到的可能是？',
+                        options: [
+                            { label: '第1张图', src: 'assets/XCMwLkNb8wJoJuG2LKyVph.png' },
+                            { label: '第2张图', src: 'assets/5Czbeaj7CP84VPF4GTF5Cf.png' },
+                            { label: '第3张图', src: 'assets/LA4uNxaPa6ngcFkZfD6gjW.png' }
+                        ],
+                        answerIndex: 0
+                    },
+                    {
+                        question: '从前面看一个物体是正方形，这个物体可能是（ ）',
+                        options: [
+                            { label: '第1张图', src: 'assets/BhKeaCicpT7vLBGELYxSw5.png' },
+                            { label: '第2张图', src: 'assets/mNZp9qGvhc8CUhP98iAMZL.png' },
+                            { label: '第3张图', src: 'assets/GQQ3fXnLbJcp3Myv7nUzu4.png' }
+                        ],
+                        answerIndex: 0
+                    },
+                    {
+                        question: '有个小朋友观察到鞋盒的样子是左图这样，那她是站在哪个位置观察的？（右图是三个小朋友的观察位置）（ ）',
+                        image: 'assets/4vK928yLNnTd829BstQdAi.jpg',
+                        cornerImage: 'assets/4sdQ3jhC7XQhfY5pZKDrzR.jpg',
+                        cornerLabel: '鞋盒的前面',
+                        mainLabel: '三个小朋友的观察位置',
+                        options: [
+                            { label: '小明' },
+                            { label: '小军' },
+                            { label: '小丽' }
+                        ],
+                        answerIndex: 2
+                    },
+                    {
+                        question: '下面哪些图形不能观察到圆形？',
+                        options: [
+                            { label: '第1张图', src: 'assets/hGDE2DWeuZPCQ3uPSsK4FL.png' },
+                            { label: '第2张图', src: 'assets/GQQ3fXnLbJcp3Myv7nUzu4.png' },
+                            { label: '第3张图', src: 'assets/LA4uNxaPa6ngcFkZfD6gjW.png' }
+                        ],
+                        answerIndex: 0
+                    }
+                ];
+                const quiz = bank[this.questionCursor % bank.length];
+                this.questionCursor++;
+                return { ...quiz, id: this.questionCursor };
+            }
+
+            legacyShowQuiz(item) {
+                this.state = STATE.QUIZ;
+                const modal = document.getElementById('quiz-modal');
+                const qText = document.getElementById('question-text');
+                const optContainer = document.getElementById('options-container');
+                const timerBar = document.getElementById('quiz-timer-bar');
+                
+                const quiz = this.generateQuiz(item);
+                qText.innerText = quiz.question;
+                
+                optContainer.innerHTML = '';
+                quiz.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = "bg-gray-100 hover:bg-blue-100 text-gray-800 font-bold py-4 px-2 rounded-xl border-2 border-gray-200 text-lg transition-colors";
+                    btn.innerText = opt;
+                    btn.onclick = () => this.handleQuizAnswer(opt === quiz.answer, item);
+                    optContainer.appendChild(btn);
+                });
+
+                modal.classList.remove('hidden');
+                
+                // 答题倒计时动画 (难度越大时间越短)
+                const duration = 8000;
+                timerBar.style.width = '100%';
+                anime({
+                    targets: '#quiz-timer-bar',
+                    width: '0%',
+                    duration: duration,
+                    easing: 'linear',
+                    complete: () => {
+                        if (this.state === STATE.QUIZ) {
+                            this.handleQuizAnswer(false, item);
+                        }
+                    }
+                });
+            }
+
+            showQuiz(item) {
+                this.state = STATE.QUIZ;
+                const modal = document.getElementById('quiz-modal');
+                const qText = document.getElementById('question-text');
+                const visual = document.getElementById('question-visual');
+                const optContainer = document.getElementById('options-container');
+                const timerBar = document.getElementById('quiz-timer-bar');
+                const quiz = this.generateQuiz(item);
+                this.currentQuiz = quiz;
+                if (quiz.pending) {
+                    qText.innerText = `第${quiz.id}题素材尚未接入`;
+                    visual.innerHTML = '';
+                    visual.classList.add('hidden');
+                    optContainer.innerHTML = '<div class="col-span-2 text-center text-gray-500 py-8">请提供这道题的题干图片和选项图片后再完成答题。</div>';
+                    modal.classList.remove('hidden');
+                    window.setTimeout(() => {
+                        if (this.state === STATE.QUIZ) this.handlePendingQuiz(item);
+                    }, 1500);
+                    return;
+                }
+                qText.innerText = quiz.question;
+                visual.innerHTML = '';
+                if (quiz.image) {
+                    const img = document.createElement('img');
+                    img.src = quiz.image;
+                    img.alt = quiz.mainLabel || '题目示意图';
+                    if (quiz.cornerImage) {
+                        // 双图题干：左图为观察到的形状，右图为三人观察场景，并排不遮挡
+                        const pair = document.createElement('div');
+                        pair.className = 'visual-pair';
+                        const inset = document.createElement('figure');
+                        inset.className = 'visual-inset';
+                        const insetImg = document.createElement('img');
+                        insetImg.src = quiz.cornerImage;
+                        insetImg.alt = quiz.cornerLabel || '观察到的形状';
+                        inset.appendChild(insetImg);
+                        const insetCap = document.createElement('figcaption');
+                        insetCap.innerText = quiz.cornerLabel || '';
+                        if (!quiz.cornerLabel) insetCap.style.display = 'none';
+                        inset.appendChild(insetCap);
+                        const main = document.createElement('figure');
+                        main.className = 'visual-main';
+                        main.appendChild(img);
+                        if (quiz.mainLabel) {
+                            const mainCap = document.createElement('figcaption');
+                            mainCap.innerText = quiz.mainLabel;
+                            main.appendChild(mainCap);
+                        }
+                        pair.appendChild(inset);
+                        pair.appendChild(main);
+                        visual.appendChild(pair);
+                    } else {
+                        visual.appendChild(img);
+                    }
+                    visual.classList.remove('hidden');
+                } else {
+                    visual.classList.add('hidden');
+                }
+                optContainer.innerHTML = '';
+                quiz.options.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    const label = document.createElement('span');
+                    label.className = 'option-label';
+                    label.innerText = opt.label || `图形${index + 1}`;
+                    if (opt.src) {
+                        // 图片选项：图形卡片 + 文字标注
+                        btn.className = 'quiz-option bg-gray-100 hover:bg-blue-100 text-gray-800 rounded-xl border-2 border-gray-200 transition-colors';
+                        const imageWrap = document.createElement('span');
+                        imageWrap.className = `option-image-wrap ${opt.crop || 'crop-full'}`;
+                        const img = document.createElement('img');
+                        img.src = opt.src;
+                        img.alt = opt.label || `第${index + 1}个图片选项`;
+                        img.loading = 'eager';
+                        imageWrap.appendChild(img);
+                        btn.appendChild(imageWrap);
+                    } else {
+                        // 纯文字选项：不渲染图片，避免破图
+                        btn.className = 'text-option bg-gray-100 hover:bg-blue-100 text-gray-800 font-bold rounded-xl border-2 border-gray-200 text-2xl transition-colors';
+                    }
+                    btn.appendChild(label);
+                    btn.onclick = () => this.handleQuizAnswer(index, item, quiz);
+                    optContainer.appendChild(btn);
+                });
+                modal.classList.remove('hidden');
+                const duration = 8000;
+                timerBar.style.width = '100%';
+                anime({
+                    targets: '#quiz-timer-bar',
+                    width: '0%',
+                    duration,
+                    easing: 'linear',
+                    complete: () => {
+                        if (this.state === STATE.QUIZ) this.handleQuizAnswer(-1, item, quiz);
+                    }
+                });
+            }
+
+            legacyHandleQuizAnswer(isCorrect, item) {
+                const modal = document.getElementById('quiz-modal');
+                modal.classList.add('hidden');
+                anime.remove('#quiz-timer-bar'); // 停止倒计时
+                
+                if (isCorrect) {
+                    this.playCorrectSound();
+                    this.showFloatingText("太棒了", this.width/2, 150);
+                    
+                    // 根据物品类型设置回收速度
+                    if (item.type === 'stone') {
+                        // 石头：极慢回收（强化惩罚）
+                        this.hook.speed = CONFIG.hookSpeed * 0.15; // 降低至 0.15 倍
+                    } else if (item.type === 'bomb') {
+                        // 炸药：正常速度但扣分
+                        this.hook.speed = CONFIG.hookSpeed * 2.0;
+                    } else {
+                        // 其他：快速回收
+                        this.hook.speed = CONFIG.hookSpeed * 3.0;
+                    }
+                    
+                    // 计算得分
+                    let earnedScore = 0;
+                    if (item.score === 'BLIND_BOX') {
+                        earnedScore = Math.floor(Math.random() * 999) + 1;
+                        this.showFloatingText('+' + earnedScore, this.width/2, 100);
+                    } else if (item.type === 'bomb') {
+                        earnedScore = item.score; // -100
+                        this.showFloatingText(earnedScore, this.width/2, 100);
+                        this.createParticles(this.width/2, 100, 30, '#FF0000');
+                    } else {
+                        earnedScore = item.score;
+                    }
+                    
+                    this.score += earnedScore;
+                    if (item.type !== 'bomb') {
+                        this.createParticles(this.width/2, 100, 20, null);
+                    }
+                } else {
+                    this.playWrongSound();
+                    // 答错：极慢拉回，且不得分（或者掉落）
+                    this.hook.speed = 1; // 非常慢
+                    // item.score = 0; // 不得分
+                    // 或者直接让物品掉落，钩子空回
+                    this.hook.grabbedItem = null;
+                    this.hook.speed = CONFIG.hookSpeed * 2; // 快速空回
+                }
+                
+                this.state = STATE.GRAB; // 继续拉回过程
+                this.hook.status = 'REWIND';
+                this.updateUI();
+            }
+
+            handlePendingQuiz(item) {
+                if (this.state !== STATE.QUIZ) return;
+                document.getElementById('quiz-modal').classList.add('hidden');
+                this.hook.grabbedItem = null;
+                this.hook.speed = CONFIG.hookSpeed * 2;
+                this.state = STATE.GRAB;
+                this.hook.status = 'REWIND';
+                this.updateUI();
+            }
+
+            handleQuizAnswer(selectedIndex, item, quiz) {
+                if (this.state !== STATE.QUIZ) return;
+                const modal = document.getElementById('quiz-modal');
+                modal.classList.add('hidden');
+                anime.remove('#quiz-timer-bar');
+                const isCorrect = selectedIndex === quiz.answerIndex;
+                const record = {
+                    level: this.level,
+                    question: quiz.question,
+                    options: quiz.options.map(option => ({ ...option })),
+                    selectedIndex,
+                    answerIndex: quiz.answerIndex,
+                    image: quiz.image,
+                    cornerImage: quiz.cornerImage,
+                    cornerLabel: quiz.cornerLabel,
+                    mainLabel: quiz.mainLabel,
+                    isCorrect
+                };
+                this.answerHistory.push(record);
+                if (isCorrect) {
+                    this.correctCount++;
+                    this.playCorrectSound();
+                    const earned = item.score || 100;
+                    this.score += earned;
+                    this.showFloatingText(`答对了 +${earned}`, this.width / 2, 150);
+                    this.createParticles(this.width / 2, 100, 20, null);
+                    this.hook.speed = CONFIG.hookSpeed * 3;
+                } else {
+                    this.wrongCount++;
+                    this.playWrongSound();
+                    this.showFloatingText(selectedIndex < 0 ? '时间到，宝藏掉了' : '再想想，宝藏掉了', this.width / 2, 150);
+                    this.hook.grabbedItem = null;
+                    this.hook.speed = CONFIG.hookSpeed * 2;
+                }
+                this.state = STATE.GRAB;
+                this.hook.status = 'REWIND';
+                this.updateUI();
+            }
+
+            renderReview() {
+                const panel = document.getElementById('review-panel');
+                const score = document.getElementById('final-score');
+                const result = document.getElementById('final-result');
+                const list = document.getElementById('review-list');
+                panel.classList.remove('hidden');
+                score.innerText = `最终得分：${this.score}`;
+                result.innerText = `答对 ${this.correctCount} 题，答错 ${this.wrongCount} 题`;
+                list.innerHTML = '';
+                const correctRecords = this.answerHistory.filter(record => record.isCorrect);
+                const wrongRecords = this.answerHistory.filter(record => !record.isCorrect);
+                const sections = [
+                    { title: '回答正确的题目', records: correctRecords, color: 'text-green-600' },
+                    { title: '回答错误的题目', records: wrongRecords, color: 'text-red-600' }
+                ];
+                sections.forEach(section => {
+                    if (!section.records.length) return;
+                    const heading = document.createElement('div');
+                    heading.className = `mt-3 mb-1 font-bold ${section.color}`;
+                    heading.innerText = section.title;
+                    list.appendChild(heading);
+                    section.records.forEach(record => {
+                        const card = document.createElement('div');
+                        card.className = `review-card ${record.isCorrect ? 'review-correct' : 'review-wrong'}`;
+                        const q = document.createElement('div');
+                         q.className = 'review-question';
+                         q.innerText = `第${this.answerHistory.indexOf(record) + 1}题：${record.question}`;
+                        card.appendChild(q);
+                         if (record.image) {
+                             const visual = document.createElement('div');
+                             visual.className = 'review-visual';
+                             const img = document.createElement('img');
+                             img.src = record.image;
+                             img.alt = '题目示意图';
+                             if (record.cornerImage) {
+                                 // 复盘同样保留双图，方便学生回看自己错在哪一步观察
+                                 const pair = document.createElement('div');
+                                 pair.className = 'visual-pair';
+                                 const inset = document.createElement('figure');
+                                 inset.className = 'visual-inset';
+                                 const insetImg = document.createElement('img');
+                                 insetImg.src = record.cornerImage;
+                                 insetImg.alt = record.cornerLabel || '观察到的形状';
+                                 inset.appendChild(insetImg);
+                                 const insetCap = document.createElement('figcaption');
+                                 insetCap.innerText = record.cornerLabel || '';
+                                  if (!record.cornerLabel) insetCap.style.display = 'none';
+                                 inset.appendChild(insetCap);
+                                 const main = document.createElement('figure');
+                                 main.className = 'visual-main';
+                                 main.appendChild(img);
+                                 if (record.mainLabel) {
+                                     const mainCap = document.createElement('figcaption');
+                                     mainCap.innerText = record.mainLabel;
+                                     main.appendChild(mainCap);
+                                 }
+                                 pair.appendChild(inset);
+                                 pair.appendChild(main);
+                                 visual.appendChild(pair);
+                             } else {
+                                 visual.appendChild(img);
+                             }
+                             card.appendChild(visual);
+                         }
+                        const options = document.createElement('div');
+                        options.className = 'review-options';
+                        record.options.forEach((option, index) => {
+                            const optionEl = document.createElement('div');
+                            optionEl.className = 'review-option';
+                            if (index === record.selectedIndex) optionEl.classList.add('selected');
+                            if (index === record.answerIndex) optionEl.classList.add('correct');
+                            if (option.src) {
+                                const img = document.createElement('img');
+                                img.className = `review-option-image ${option.crop || ''}`;
+                                img.src = option.src;
+                                img.alt = option.label || `第${index + 1}个图片选项`;
+                                img.loading = 'lazy';
+                                optionEl.appendChild(img);
+                            }
+                            const label = document.createElement('div');
+                            label.className = 'review-option-label';
+                            label.innerText = option.label || `图形${index + 1}`;
+                            optionEl.appendChild(label);
+                            options.appendChild(optionEl);
+                        });
+                        card.appendChild(options);
+                        const note = document.createElement('div');
+                        note.className = 'review-answer-note';
+                        note.innerText = record.selectedIndex < 0
+                            ? `未作答；正确答案：${record.options[record.answerIndex].label}`
+                            : `你的选择：${record.options[record.selectedIndex].label}；正确答案：${record.options[record.answerIndex].label}`;
+                        card.appendChild(note);
+                        list.appendChild(card);
+                    });
+                });
+            }
+
+            showFloatingText(text, x, y) {
+                const el = document.createElement('div');
+                el.className = 'fixed text-4xl font-bold text-yellow-300 pointer-events-none z-50';
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                el.style.textShadow = '0 2px 4px rgba(0,0,0,0.5)';
+                el.innerText = text;
+                document.body.appendChild(el);
+
+                anime({
+                    targets: el,
+                    translateY: -100,
+                    opacity: 0,
+                    duration: 1500,
+                    easing: 'easeOutExpo',
+                    complete: () => el.remove()
+                });
+            }
+
+            createParticles(x, y, count, color = null) {
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 10,
+                        vy: (Math.random() - 0.5) * 10,
+                        life: 1,
+                        color: color || `hsl(${Math.random() * 60 + 30}, 100%, 50%)`
+                    });
+                }
+            }
+
+            explodeBomb(bomb) {
+                const before = this.items.length;
+                const affected = [];
+                this.items = this.items.filter(item => {
+                    const distance = Math.hypot(item.x - bomb.x, item.y - bomb.y);
+                    if (distance <= CONFIG.bombRadius) {
+                        affected.push(item);
+                        return false;
+                    }
+                    return true;
+                });
+                this.createParticles(bomb.x, bomb.y, 48, '#ff6b35');
+                this.showFloatingText(`爆炸！清除${affected.length}件物品`, bomb.x, bomb.y);
+                this.hook.grabbedItem = null;
+                this.hook.speed = CONFIG.hookSpeed * 4;
+                this.state = STATE.GRAB;
+                this.hook.status = 'REWIND';
+                this.updateUI();
+            }
+
+            update() {
+                if (this.state === STATE.PAUSE || this.state === STATE.QUIZ) return;
+
+                // 钩子逻辑
+                if (this.hook.status === 'SWING') {
+                    // 使用正弦函数实现丝滑摆动
+                    this.swingTime += CONFIG.hookRotateSpeed;
+                    this.hook.angle = Math.sin(this.swingTime) * CONFIG.hookMaxAngle;
+                } else if (this.hook.status === 'SHOOT') {
+                    this.hook.length += CONFIG.hookSpeed;
+                    
+                    // 实时计算钩子头部坐标
+                    const hookX = this.hook.x + Math.sin(this.hook.angle) * this.hook.length;
+                    const hookY = this.hook.y + Math.cos(this.hook.angle) * this.hook.length;
+
+                    // 边界检测：严格限制在画面内
+                    // 碰到左、右、下边界立即回收
+                    if (hookX <= 0 || hookX >= this.width || hookY >= this.height) {
+                        this.hook.status = 'REWIND';
+                        this.hook.speed = CONFIG.hookSpeed * 5.0; // 空钩极速回
+                    }
+
+                    // 碰撞检测
+
+                    for (let i = this.items.length - 1; i >= 0; i--) {
+                        const item = this.items[i];
+                        const dx = hookX - item.x;
+                        const dy = hookY - item.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < item.radius) {
+                            // 抓到了：答题宝藏弹出题目；石头减速回收；炸药包立即爆炸。
+                            this.hook.grabbedItem = item;
+                            this.items.splice(i, 1);
+                            if (item.type === 'bomb') {
+                                this.explodeBomb(item);
+                            } else if (item.quiz) {
+                                this.showQuiz(item);
+                            } else {
+                                // 石头不是提示性效果：减速值直接用于下面 REWIND 分支的每帧长度位移。
+                                this.hook.slowedByStone = true;
+                                this.hook.speed = CONFIG.hookSpeed * CONFIG.stoneSlowMultiplier;
+                                this.state = STATE.GRAB;
+                                this.hook.status = 'REWIND';
+                                this.showFloatingText('石头减速', item.x, item.y);
+                            }
+                            break;
+                        }
+                    }
+
+                } else if (this.hook.status === 'REWIND') {
+                    this.hook.length -= this.hook.speed;
+                    if (this.hook.length <= CONFIG.ropeLength) {
+                        this.hook.length = CONFIG.ropeLength;
+                        this.hook.status = 'SWING';
+                        this.state = STATE.IDLE;
+                        this.hook.speed = CONFIG.hookSpeed;
+                        this.hook.slowedByStone = false;
+                        if (this.hook.grabbedItem) {
+                            // 已经加分了，这里只需清空
+                            this.hook.grabbedItem = null;
+                        }
+                        // 当前关卡的金块、钻石和石头全部抓完后，立即结束本关。
+                        // 放在钩子完成回收后检查，避免答题弹窗尚未关闭时提前结算。
+                        if (this.items.length === 0 && this.state === STATE.IDLE) {
+                            this.endLevel();
+                        }
+                    }
+                }
+
+                // 粒子更新
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    let p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    if (p.life <= 0) this.particles.splice(i, 1);
+                }
+            }
+
+            draw() {
+                this.ctx.clearRect(0, 0, this.width, this.height);
+
+                // 绘制钩子绳索
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.hook.x, this.hook.y);
+                const endX = this.hook.x + Math.sin(this.hook.angle) * this.hook.length;
+                const endY = this.hook.y + Math.cos(this.hook.angle) * this.hook.length;
+                this.ctx.lineTo(endX, endY);
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeStyle = '#333';
+                this.ctx.stroke();
+
+                // 绘制钩子头
+                this.ctx.save();
+                this.ctx.translate(endX, endY);
+                this.ctx.rotate(-this.hook.angle);
+                // 简单绘制钩子形状，或者使用图片
+                if (this.assets.hook.complete) {
+                    this.ctx.drawImage(this.assets.hook, -15, -10, 30, 30);
+                } else {
+                    this.ctx.fillStyle = '#555';
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, 10, 0, Math.PI*2);
+                    this.ctx.fill();
+                }
+                
+                // 如果抓住了物品，绘制物品在钩子上
+                if (this.hook.grabbedItem) {
+                    this.drawItem(this.hook.grabbedItem, 0, 15); // 相对坐标
+                }
+                this.ctx.restore();
+
+                // 绘制场景中的物品
+                this.items.forEach(item => {
+                    this.ctx.save();
+                    this.ctx.translate(item.x, item.y);
+                    this.ctx.rotate(item.rotation);
+                    this.drawItem(item, 0, 0);
+                    this.ctx.restore();
+                });
+
+                // 绘制粒子
+                this.particles.forEach(p => {
+                    this.ctx.globalAlpha = p.life;
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+                    this.ctx.fill();
+                    this.ctx.globalAlpha = 1;
+                });
+            }
+
+            drawItem(item, x, y) {
+                const size = item.radius * 2;
+                
+                if (item.type === 'gold') {
+                    if (this.assets.gold.complete) {
+                        this.ctx.drawImage(this.assets.gold, x - item.radius, y - item.radius, size, size);
+                    } else {
+                        // Fallback
+                        this.ctx.fillStyle = '#FFD54F';
+                        this.ctx.beginPath();
+                        this.ctx.arc(x, y, item.radius, 0, Math.PI*2);
+                        this.ctx.fill();
+                    }
+                } else if (item.type === 'stone') {
+                    if (this.assets.stone.complete) {
+                        this.ctx.drawImage(this.assets.stone, x - item.radius, y - item.radius, size, size);
+                    } else {
+                        this.ctx.fillStyle = '#9E9E9E';
+                        this.ctx.beginPath();
+                        this.ctx.arc(x, y, item.radius, 0, Math.PI*2);
+                        this.ctx.fill();
+                    }
+                } else if (item.type === 'bag') {
+                    if (this.assets.bag.complete) {
+                        this.ctx.drawImage(this.assets.bag, x - item.radius, y - item.radius, size, size);
+                    } else {
+                        this.ctx.fillStyle = '#EF5350';
+                        this.ctx.beginPath();
+                        this.ctx.arc(x, y, item.radius, 0, Math.PI*2);
+                        this.ctx.fill();
+                        this.ctx.fillStyle = '#FFF';
+                        this.ctx.fillText('?', x, y);
+                    }
+                } else if (item.type === 'bomb') {
+                    if (this.assets.bomb.complete) {
+                        this.ctx.drawImage(this.assets.bomb, x - item.radius, y - item.radius, size, size);
+                    } else {
+                        this.ctx.fillStyle = '#D32F2F';
+                        this.ctx.beginPath();
+                        this.ctx.arc(x, y, item.radius, 0, Math.PI*2);
+                        this.ctx.fill();
+                        this.ctx.fillStyle = '#FFF';
+                        this.ctx.font = 'bold 20px Arial';
+                        this.ctx.fillText('💣', x, y);
+                    }
+                } else if (item.type === 'diamond') {
+                    // 立体小钻石：正面、侧面和高光面组成的切面效果。
+                    this.ctx.save();
+                    this.ctx.shadowColor = 'rgba(120, 220, 255, 0.9)';
+                    this.ctx.shadowBlur = 18;
+                    const r = item.radius;
+                    this.ctx.fillStyle = '#7de3ff';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, y - r);
+                    this.ctx.lineTo(x + r * 0.78, y - r * 0.28);
+                    this.ctx.lineTo(x + r * 0.52, y + r * 0.72);
+                    this.ctx.lineTo(x, y + r);
+                    this.ctx.lineTo(x - r * 0.52, y + r * 0.72);
+                    this.ctx.lineTo(x - r * 0.78, y - r * 0.28);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.fillStyle = '#149ed1';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, y - r);
+                    this.ctx.lineTo(x + r * 0.78, y - r * 0.28);
+                    this.ctx.lineTo(x, y - r * 0.02);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.fillStyle = '#0c78ad';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, y - r);
+                    this.ctx.lineTo(x, y - r * 0.02);
+                    this.ctx.lineTo(x - r * 0.78, y - r * 0.28);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.fillStyle = 'rgba(255,255,255,0.82)';
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x - r * 0.22, y - r * 0.56);
+                    this.ctx.lineTo(x + r * 0.13, y - r * 0.33);
+                    this.ctx.lineTo(x - r * 0.03, y - r * 0.2);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.restore();
+                }
+            }
+
+            loop() {
+                this.update();
+                this.draw();
+                requestAnimationFrame(this.loop.bind(this));
+            }
+        }
+
+        // 初始化
+        window.onload = () => {
+            const game = new Game();
+            window.__game = game;
+        };
+    </script>
+
+
+
+
+
+<div id="imt-webext"></div></body></html>
